@@ -1,4 +1,3 @@
-# app/routes/analyze.py
 import logging
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
@@ -7,6 +6,7 @@ from pydantic import BaseModel, Field
 from app.llm_client import call_llm, LLMError
 from app.scorer import score_prompt
 from app.config import settings
+from app.logger import request_logger
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -60,6 +60,13 @@ async def analyze(body: AnalyzeRequest):
             score_result["injection_score"],
             settings.block_threshold,
         )
+        request_logger.log(
+            prompt_length=len(body.prompt),
+            **score_result,
+            blocked=True,
+            status="blocked",
+            error="Prompt blocked: high injection risk detected.",
+        )
         return JSONResponse(
             status_code=403,
             content=AnalyzeResponse(
@@ -75,6 +82,13 @@ async def analyze(body: AnalyzeRequest):
         result = call_llm(body.prompt, system_prompt=body.system_prompt)
     except LLMError as e:
         logger.warning("LLM error (%s): %s", e.status_code, e.message)
+        request_logger.log(
+            prompt_length=len(body.prompt),
+            **score_result,
+            blocked=False,
+            status="error",
+            error=e.message,
+        )
         return JSONResponse(
             status_code=e.status_code,
             content=AnalyzeResponse(
@@ -91,6 +105,16 @@ async def analyze(body: AnalyzeRequest):
         result["latency_ms"],
         result["input_tokens"],
         result["output_tokens"],
+    )
+    request_logger.log(
+        prompt_length=len(body.prompt),
+        **score_result,
+        blocked=False,
+        status="ok",
+        latency_ms=result["latency_ms"],
+        model=result["model"],
+        input_tokens=result["input_tokens"],
+        output_tokens=result["output_tokens"],
     )
 
     return AnalyzeResponse(
