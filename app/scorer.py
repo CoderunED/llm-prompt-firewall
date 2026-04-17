@@ -1,11 +1,11 @@
-# app/scorer.py
 import re
 import logging
+from app.config import settings
+from app.semantic_scorer import semantic_scorer
 
 logger = logging.getLogger(__name__)
 
 # Each entry: (pattern, weight)
-# Weights sum toward 1.0 — a single high-confidence match can push score high
 INJECTION_PATTERNS: list[tuple[str, float]] = [
     # Instruction override attempts
     (r"ignore (all |previous |prior |above |your )?(instructions?|prompts?|rules?|guidelines?)", 0.35),
@@ -61,25 +61,40 @@ _COMPILED = _compile_patterns()
 
 def score_prompt(prompt: str) -> dict:
     """
-    Score a prompt for injection attempts.
+    Score a prompt using blended regex + semantic pipeline.
 
     Returns:
         {
-            "injection_score": float,   # 0.0 – 1.0
-            "risk_level": str,          # "low" | "medium" | "high"
+            "injection_score": float,       # blended 0.0 – 1.0
+            "risk_level": str,              # "low" | "medium" | "high"
             "matched_patterns": list[str],
+            "regex_score": float,           # raw regex-only score
+            "semantic_score": float,        # raw semantic-only score
+            "closest_phrase": str,          # closest attack phrase from semantic layer
         }
     """
+    # ── Regex layer ───────────────────────────────────────────────────────────
     matched = []
-    raw_score = 0.0
+    raw_regex = 0.0
 
     for pattern, weight in _COMPILED:
         if pattern.search(prompt):
             matched.append(pattern.pattern)
-            raw_score += weight
+            raw_regex += weight
 
-    # Cap at 1.0
-    injection_score = round(min(raw_score, 1.0), 4)
+    regex_score = round(min(raw_regex, 1.0), 4)
+
+    # ── Semantic layer ────────────────────────────────────────────────────────
+    sem_result = semantic_scorer.score(prompt)
+    semantic_score = sem_result["semantic_score"]
+    closest_phrase = sem_result["closest_phrase"]
+
+    # ── Blend ─────────────────────────────────────────────────────────────────
+    blended = (
+        regex_score * settings.regex_weight +
+        semantic_score * settings.semantic_weight
+    )
+    injection_score = round(min(blended, 1.0), 4)
 
     if injection_score >= 0.5:
         risk_level = "high"
@@ -89,12 +104,15 @@ def score_prompt(prompt: str) -> dict:
         risk_level = "low"
 
     logger.info(
-        "Scored prompt | score=%.4f risk=%s matches=%d",
-        injection_score, risk_level, len(matched)
+        "Scored prompt | regex=%.4f semantic=%.4f blended=%.4f risk=%s matches=%d",
+        regex_score, semantic_score, injection_score, risk_level, len(matched),
     )
 
     return {
         "injection_score": injection_score,
         "risk_level": risk_level,
         "matched_patterns": matched,
+        "regex_score": regex_score,
+        "semantic_score": semantic_score,
+        "closest_phrase": closest_phrase,
     }

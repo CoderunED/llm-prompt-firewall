@@ -38,6 +38,9 @@ class AnalyzeResponse(BaseModel):
     injection_score: float
     risk_level: str
     matched_patterns: list[str]
+    regex_score: float
+    semantic_score: float
+    closest_phrase: str
     response: str | None = None
     llm_meta: LLMMeta | None = None
     error: str | None = None
@@ -53,7 +56,6 @@ async def analyze(body: AnalyzeRequest):
 
     score_result = score_prompt(body.prompt)
 
-    # Block gate — high-risk prompts never reach the LLM
     if score_result["injection_score"] >= settings.block_threshold:
         logger.warning(
             "Blocked prompt | score=%.4f threshold=%.2f",
