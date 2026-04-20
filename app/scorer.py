@@ -10,7 +10,8 @@ INJECTION_PATTERNS: list[tuple[str, float]] = [
     # Instruction override attempts
     (r"ignore (all |previous |prior |above |your )?(instructions?|prompts?|rules?|guidelines?)", 0.35),
     (r"disregard (all |previous |prior |above |your )?(instructions?|prompts?|rules?)", 0.35),
-    (r"forget (all |previous |prior |above |your )?(instructions?|prompts?|rules?|context)", 0.30),
+    (r"forget (all |previous |prior |above |your )?(instructions?|prompts?|rules?|context|guidelines?)", 0.30),
+    (r"forget (everything|all of it|what you know)", 0.30),
     (r"do not follow (your )?(instructions?|rules?|guidelines?)", 0.35),
     (r"override (your )?(instructions?|rules?|settings?|system)", 0.35),
 
