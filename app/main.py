@@ -1,10 +1,10 @@
-# app/main.py
 import logging
 import logging.config
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.routes.analyze import router as analyze_router
+from app.database import init_db
 
 # ── Logging setup ────────────────────────────────────────────────────────────
 logging.config.dictConfig({
@@ -26,6 +26,9 @@ logging.config.dictConfig({
 })
 
 logger = logging.getLogger(__name__)
+
+# ── DB init ───────────────────────────────────────────────────────────────────
+init_db()
 
 # ── App ───────────────────────────────────────────────────────────────────────
 app = FastAPI(

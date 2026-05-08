@@ -3,6 +3,8 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
+from app.database import insert_request
+
 _LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
 _LOG_FILE = _LOG_DIR / "requests.jsonl"
 
@@ -53,6 +55,11 @@ class RequestLogger:
                 f.write(json.dumps(entry) + "\n")
         except OSError as e:
             logger.error("Failed to write request log: %s", e)
+
+        try:
+            insert_request(entry)
+        except Exception as e:
+            logger.error("Failed to write to SQLite: %s", e)
 
 
 request_logger = RequestLogger()

@@ -7,6 +7,7 @@ from app.llm_client import call_llm, LLMError
 from app.scorer import score_prompt
 from app.config import settings
 from app.logger import request_logger
+from app.database import get_connection
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -132,3 +133,22 @@ async def analyze(body: AnalyzeRequest):
             latency_ms=result["latency_ms"],
         ),
     )
+
+
+@router.get("/stats", summary="Aggregate request statistics")
+async def stats():
+    with get_connection() as conn:
+        total     = conn.execute("SELECT COUNT(*) FROM requests").fetchone()[0]
+        blocked   = conn.execute("SELECT COUNT(*) FROM requests WHERE blocked=1").fetchone()[0]
+        avg_score = conn.execute("SELECT AVG(injection_score) FROM requests").fetchone()[0]
+        by_risk   = conn.execute(
+            "SELECT risk_level, COUNT(*) as count FROM requests GROUP BY risk_level"
+        ).fetchall()
+
+    return {
+        "total_requests": total,
+        "blocked_requests": blocked,
+        "block_rate_pct": round((blocked / total * 100) if total else 0, 1),
+        "avg_injection_score": round(avg_score or 0, 4),
+        "by_risk_level": {row["risk_level"]: row["count"] for row in by_risk},
+    }
