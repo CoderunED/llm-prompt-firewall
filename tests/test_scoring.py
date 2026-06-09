@@ -10,7 +10,7 @@
 import pytest
 from app.scorer import score_prompt
 
-BLOCK_THRESHOLD = 0.40
+BLOCK_THRESHOLD = 0.32
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
