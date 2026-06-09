@@ -27,5 +27,8 @@ jobs:
       - name: Run pytest
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BLOCK_THRESHOLD: "0.40"
+          REGEX_WEIGHT: "0.50"
+          SEMANTIC_WEIGHT: "0.50"
         run: |
           python -m pytest tests/ -v
