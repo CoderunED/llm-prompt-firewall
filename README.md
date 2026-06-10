@@ -6,44 +6,7 @@ A FastAPI middleware that intercepts prompts before they reach an LLM, scores th
 
 ## Architecture
 
-```
-Client Request
-      │
-      ▼
-┌─────────────────────────────────────────────────────────┐
-│                    FastAPI  /api/v1/analyze              │
-│                                                         │
-│   ┌─────────────────┐     ┌─────────────────────────┐   │
-│   │  Regex Scorer   │     │   Semantic Scorer        │   │
-│   │  scorer.py      │     │   semantic_scorer.py     │   │
-│   │  25+ patterns   │     │   all-MiniLM-L6-v2       │   │
-│   │  score: 0–1.0   │     │   37 attack anchors      │   │
-│   └────────┬────────┘     └───────────┬─────────────┘   │
-│            │    weight: 0.50          │  weight: 0.50    │
-│            └──────────────┬───────────┘                  │
-│                           ▼                              │
-│                  Blended Score (0–1.0)                   │
-│                  OWASP LLM Top 10 mapping                │
-│                           │                              │
-│              ┌────────────┴─────────────┐                │
-│              │ score ≥ 0.40?            │                │
-│              ▼                          ▼                │
-│          ┌───────┐               ┌────────────┐          │
-│          │  403  │               │  LLM Call  │          │
-│          │ Block │               │ Anthropic  │          │
-│          └───┬───┘               └─────┬──────┘          │
-│              │                         │                  │
-│              └──────────┬──────────────┘                  │
-│                         ▼                                │
-│              ┌────────────────────┐                      │
-│              │  Dual-write Logger │                      │
-│              │  JSONL + SQLite    │                      │
-│              └────────────────────┘                      │
-└─────────────────────────────────────────────────────────┘
-      │
-      ▼
-Streamlit Dashboard  (port 8501)
-```
+<img width="1170" height="1120" alt="Architecture" src="https://github.com/user-attachments/assets/30bbcbc5-7a04-4d84-ac80-d4cd70d8a1d6" />
 
 ---
 
