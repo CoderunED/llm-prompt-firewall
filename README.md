@@ -9,6 +9,11 @@ A FastAPI middleware that intercepts prompts before they reach an LLM, scores th
 <img width="1170" height="1120" alt="Architecture" src="https://github.com/user-attachments/assets/30bbcbc5-7a04-4d84-ac80-d4cd70d8a1d6" />
 
 ---
+## Dashboard and Results
+<img width="1432" height="1000" alt="Dashboard1" src="https://github.com/user-attachments/assets/74553e38-8ab7-4745-9a68-fd6a0cd5ebef" />
+<img width="1459" height="837" alt="Results" src="https://github.com/user-attachments/assets/2dd2588f-b5b0-468c-ab63-1185716b118c" />
+
+---
 
 ## Detection Pipeline
 
