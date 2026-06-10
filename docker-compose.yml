@@ -1,0 +1,46 @@
+services:
+
+  api:
+    build: .
+    container_name: firewall-api
+    command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - LLM_MODEL=${LLM_MODEL:-claude-opus-4-6}
+      - APP_ENV=${APP_ENV:-production}
+      - BLOCK_THRESHOLD=${BLOCK_THRESHOLD:-0.40}
+      - REGEX_WEIGHT=${REGEX_WEIGHT:-0.50}
+      - SEMANTIC_WEIGHT=${SEMANTIC_WEIGHT:-0.50}
+    volumes:
+      # Shared volume so dashboard can read the same DB the API writes
+      - logs:/app/logs
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+  dashboard:
+    build: .
+    container_name: firewall-dashboard
+    command: python -m streamlit run dashboard.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    environment:
+      - APP_ENV=${APP_ENV:-production}
+    volumes:
+      # Same shared volume — reads the DB written by the api service
+      - logs:/app/logs
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  logs:
+    driver: local
